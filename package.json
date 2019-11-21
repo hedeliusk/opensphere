@@ -234,7 +234,7 @@
     "angular-mocks": "~1.7.x",
     "autoprefixer": "^8.4.1",
     "clean-css-cli": "^4.1.11",
-    "conventional-changelog-cli": "^1.2.0",
+    "conventional-changelog-cli": "^2.0.0",
     "conventional-recommended-bump": "^0.3.0",
     "cypress": "=3.5.0",
     "cypress-image-snapshot": "^3.0.1",
