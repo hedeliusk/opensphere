@@ -293,7 +293,7 @@
     "moment": "~2.20.1",
     "navigator.sendbeacon": "~0.0.x",
     "oboe": "^2.1.5",
-    "ol-cesium": "=1.37.0",
+    "ol-cesium": "=2.10.0",
     "openlayers": "=4.6.4",
     "opensphere-asm": "^1.0.0",
     "papaparse": "~4.2.0",
