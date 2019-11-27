@@ -256,7 +256,7 @@
     "node-sass": "^4.12.0",
     "opensphere-build-closure-helper": "^3.0.0",
     "opensphere-build-docs": "^2.0.0",
-    "opensphere-build-index": "^2.2.0",
+    "opensphere-build-index": "^3.0.0",
     "opensphere-build-resolver": "^6.0.0",
     "opensphere-state-schema": "^2.7.0",
     "postcss-cli": "^5.0.0",
