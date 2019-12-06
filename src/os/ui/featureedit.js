@@ -11,6 +11,7 @@ goog.require('ol.Feature');
 goog.require('ol.MapBrowserEventType');
 goog.require('ol.array');
 goog.require('ol.events');
+goog.require('ol.geom.GeometryCollection');
 goog.require('ol.geom.Point');
 goog.require('os.MapContainer');
 goog.require('os.action.EventType');
@@ -31,6 +32,7 @@ goog.require('os.ui.datetime.AnyDateType');
 goog.require('os.ui.file.kml');
 goog.require('os.ui.geo.PositionEventType');
 goog.require('os.ui.geo.positionDirective');
+goog.require('os.ui.geo.ringOptionsDirective');
 goog.require('os.ui.layer.labelControlsDirective');
 goog.require('os.ui.layer.vectorStyleControlsDirective');
 goog.require('os.ui.list');
@@ -67,6 +69,7 @@ os.ui.Module.directive('featureedit', [os.ui.featureEditDirective]);
  * @typedef {{
  *   feature: (ol.Feature|undefined),
  *   geometry: (ol.geom.SimpleGeometry|undefined),
+ *   label: (string|undefined),
  *   name: (string|undefined),
  *   callback: Function
  * }}
@@ -318,6 +321,17 @@ os.ui.FeatureEditCtrl = function($scope, $element, $timeout) {
   this['orientation'] = undefined;
 
   /**
+   * The ring options.
+   * @type {?Object<string, *>}
+   */
+  this['ringOptions'] = null;
+
+  /**
+   * @type {string}
+   */
+  this['ringTitle'] = os.ui.geo.RingTitle;
+
+  /**
    * Icon Rotation, in degrees.
    * @type {number|undefined}
    */
@@ -475,15 +489,14 @@ os.ui.FeatureEditCtrl = function($scope, $element, $timeout) {
       this['timeEditEnabled'] = source.isTimeEditEnabled();
     }
 
+    if (!feature.getId()) {
+      feature.setId(this.tempFeatureId);
+    }
+
     // when editing, we update the existing feature so we don't have to worry about hiding it or overlapping a
     // temporary feature.
     this.previewFeature = feature;
     this.originalProperties_ = feature.getProperties();
-
-    if (!this.isPolygon()) {
-      delete this['fillColor'];
-      delete this['fillOpacity'];
-    }
 
     if (this.originalProperties_) {
       // we don't care about or want these sticking around, so remove them
@@ -537,6 +550,7 @@ os.ui.FeatureEditCtrl = function($scope, $element, $timeout) {
   $scope.$on('labelColor.reset', this.onLabelColorReset.bind(this));
   $scope.$on(os.ui.geo.PositionEventType.MAP_ENABLED, this.onMapEnabled_.bind(this));
   $scope.$on(os.ui.layer.LabelControlsEventType.COLUMN_CHANGE, this.onColumnChange.bind(this));
+  $scope.$on('ring.update', this.onRingsChange.bind(this));
 
   $scope.$on(os.ui.datetime.AnyDateCtrl.CHANGE, function(event, instant, start, end) {
     event.stopPropagation();
@@ -563,18 +577,20 @@ os.ui.FeatureEditCtrl = function($scope, $element, $timeout) {
   // fire an event to inform other UIs that an edit has launched.
   os.dispatcher.dispatchEvent(os.annotation.EventType.LAUNCH_EDIT);
 
-  $timeout(function() {
-    // expand the default section if set
-    if (this.defaultExpandedOptionsId) {
-      var el = document.getElementById(this.defaultExpandedOptionsId);
-      if (el) {
-        goog.dom.classlist.add(el, 'show');
+  $scope.$on(os.ui.text.TuiEditor.READY, function() {
+    $timeout(function() {
+      // expand the default section if set
+      if (this.defaultExpandedOptionsId) {
+        var el = document.getElementById(this.defaultExpandedOptionsId);
+        if (el) {
+          goog.dom.classlist.add(el, 'show');
+        }
       }
-    }
 
-    // notify the window that it can update the size
-    $scope.$emit(os.ui.WindowEventType.READY);
-  }.bind(this), 150);
+      // notify the window that it can update the size
+      $scope.$emit(os.ui.WindowEventType.READY);
+    }.bind(this));
+  }.bind(this));
 };
 goog.inherits(os.ui.FeatureEditCtrl, goog.Disposable);
 
@@ -666,7 +682,7 @@ os.ui.FeatureEditCtrl.prototype.disposeInternal = function() {
 
   if (this.previewFeature) {
     if (this.previewFeature.getId() == this.tempFeatureId) {
-      os.MapContainer.getInstance().removeFeature(this.previewFeature, true);
+      os.MapContainer.getInstance().removeFeature(this.previewFeature);
     }
 
     this.previewFeature = null;
@@ -781,34 +797,42 @@ os.ui.FeatureEditCtrl.prototype.isEllipse = function() {
 
 
 /**
- * If a polygon is selected.
+ * If the feature has a polygonal geometry.
  *
  * @return {boolean}
  * @export
  */
 os.ui.FeatureEditCtrl.prototype.isPolygon = function() {
-  var geometry = this.previewFeature.getGeometry();
-
-  if (geometry) {
-    return os.geo.isGeometryPolygonal(geometry) || this.isEllipse();
-  } else {
-    return false;
+  if (this.isEllipse()) {
+    return true;
   }
+
+  if (this.previewFeature) {
+    return os.geo.isGeometryPolygonal(this.previewFeature.getGeometry());
+  }
+
+  return false;
 };
 
 
 /**
- * If a line or polygon is selected.
+ * If the feature has a line or polygonal geometry.
  *
  * @return {boolean}
  * @export
  */
 os.ui.FeatureEditCtrl.prototype.isPolygonOrLine = function() {
-  var geometry = this.previewFeature.getGeometry();
-  var type = geometry.getType();
+  if (this.previewFeature) {
+    var geometry = this.previewFeature.getGeometry();
+    if (geometry) {
+      var type = geometry.getType();
 
-  return type == ol.geom.GeometryType.POLYGON || type == ol.geom.GeometryType.MULTI_POLYGON ||
-    type == ol.geom.GeometryType.LINE_STRING || type == ol.geom.GeometryType.MULTI_LINE_STRING;
+      return type == ol.geom.GeometryType.POLYGON || type == ol.geom.GeometryType.MULTI_POLYGON ||
+        type == ol.geom.GeometryType.LINE_STRING || type == ol.geom.GeometryType.MULTI_LINE_STRING;
+    }
+  }
+
+  return false;
 };
 
 
@@ -918,14 +942,6 @@ os.ui.FeatureEditCtrl.prototype.onMapClick_ = function(mapBrowserEvent) {
  */
 os.ui.FeatureEditCtrl.prototype.updatePreview = function() {
   if (this.previewFeature) {
-    if (this.isPolygon()) {
-      this['fillOpacity'] = this['fillOpacity'] || os.style.DEFAULT_FILL_ALPHA;
-      this['fillColor'] = this['fillColor'] || os.color.toHexString(os.style.DEFAULT_LAYER_COLOR);
-    } else {
-      this['fillOpacity'] = undefined;
-      this['fillColor'] = undefined;
-    }
-
     this.saveToFeature(this.previewFeature);
 
     var osMap = os.MapContainer.getInstance();
@@ -959,38 +975,35 @@ os.ui.FeatureEditCtrl.prototype.createPreviewFeature = function() {
   }
 
   var geometry = /** @type {ol.geom.SimpleGeometry|undefined} */ (this.options['geometry']);
-  if (!geometry) {
-    // new place without a geometry, initialize as a point
-    this['pointGeometry'] = {
-      'lat': NaN,
-      'lon': NaN,
-      'alt': NaN
-    };
-  } else if (geometry instanceof ol.geom.Point) {
-    // geometry is a point, so allow editing it
-    geometry = /** @type {ol.geom.SimpleGeometry} */ (geometry.clone().toLonLat());
-
-    var coordinate = geometry.getFirstCoordinate();
-    if (coordinate) {
-      this['altitude'] = coordinate[2] || 0;
-
+  var geometryType = geometry ? geometry.getType() : '';
+  switch (geometryType) {
+    case '':
+      // new place without a geometry, initialize as a point
       this['pointGeometry'] = {
-        'lon': coordinate[0],
-        'lat': coordinate[1],
-        'alt': this['altitude']
+        'lat': NaN,
+        'lon': NaN,
+        'alt': NaN
       };
-    }
+      break;
+    case ol.geom.GeometryType.POINT:
+      // geometry is a point, so allow editing it
+      geometry = /** @type {ol.geom.Point} */ (geometry.clone().toLonLat());
 
-    delete this['fillColor'];
-    delete this['fillOpacity'];
-  } else {
-    // not a point, so disable geometry edit
-    this.originalGeometry = geometry;
+      var coordinate = geometry.getFirstCoordinate();
+      if (coordinate) {
+        this['altitude'] = coordinate[2] || 0;
 
-    if (geometry instanceof ol.geom.LineString) {
-      delete this['fillColor'];
-      delete this['fillOpacity'];
-    }
+        this['pointGeometry'] = {
+          'lon': coordinate[0],
+          'lat': coordinate[1],
+          'alt': this['altitude']
+        };
+      }
+      break;
+    default:
+      // not a point, so disable geometry edit
+      this.originalGeometry = geometry || null;
+      break;
   }
 
   // default feature to show the name field
@@ -1063,22 +1076,21 @@ os.ui.FeatureEditCtrl.prototype.loadFromFeature = function(feature) {
       this['labelColor'] = this['color'];
     }
 
+    // initialize fill color and opacity
+    if (config['fill']['color']) {
+      // use the color from config
+      this['fillColor'] = os.color.toHexString(config['fill']['color']);
+      this['fillOpacity'] = os.color.toRgbArray(config['fill']['color'])[3];
+    } else {
+      // use default values
+      this['fillColor'] = os.color.toHexString(os.style.DEFAULT_LAYER_COLOR);
+      this['fillOpacity'] = os.style.DEFAULT_FILL_ALPHA;
+    }
+
     var icon = os.style.getConfigIcon(config);
     if (icon) {
       this['icon'] = icon;
       this['centerIcon'] = icon;
-    }
-
-    // Make sure we have a fill color and opacity for polygons, and don't have them otherwise
-    if (config['fill'] && config['fill']['color']) {
-      if (this.isPolygon()) {
-        this['fillColor'] = os.color.toHexString(config['fill']['color']);
-        var opacity = os.color.toRgbArray(config['fill']['color']);
-        this['fillOpacity'] = opacity[3];
-      } else {
-        delete this['fillColor'];
-        delete this['fillOpacity'];
-      }
     }
 
     var lineDash = os.style.getConfigLineDash(config);
@@ -1155,6 +1167,12 @@ os.ui.FeatureEditCtrl.prototype.loadFromFeature = function(feature) {
       var geom = os.ui.FeatureEditCtrl.getFirstNonCollectionGeometry_(geometry);
       altitudeMode = geom.get(os.data.RecordField.ALTITUDE_MODE) || altitudeMode;
     }
+  } else {
+    this['pointGeometry'] = {
+      'lon': NaN,
+      'lat': NaN,
+      'alt': NaN
+    };
   }
 
   if (Array.isArray(altitudeMode) && altitudeMode.length) {
@@ -1164,6 +1182,8 @@ os.ui.FeatureEditCtrl.prototype.loadFromFeature = function(feature) {
   if (altitudeMode && this['altitudeModes'].indexOf(altitudeMode) > -1) {
     this['altitudeMode'] = altitudeMode;
   }
+
+  this['ringOptions'] = /** @type {Object<string, *>} */ (feature.get(os.data.RecordField.RING_OPTIONS));
 
   if (!this.isFeatureDynamic()) {
     var rotation = feature.get(os.Fields.BEARING);
@@ -1323,15 +1343,13 @@ os.ui.FeatureEditCtrl.prototype.setFeatureConfig_ = function(config) {
     os.style.setConfigOpacityColor(config, 0);
   }
 
-  if (this['fillColor'] && this['fillOpacity'] != null) {
+  // set fill color for polygons
+  if (this.isPolygon()) {
     var fillColor = ol.color.asArray(this['fillColor']);
     var fillOpacity = os.color.normalizeOpacity(this['fillOpacity']);
     fillColor[3] = fillOpacity;
     fillColor = os.style.toRgbaString(fillColor);
-
-    if (color != fillColor) {
-      os.style.setFillColor(config, fillColor);
-    }
+    os.style.setFillColor(config, fillColor);
   }
 
   // set icon config if selected
@@ -1409,6 +1427,10 @@ os.ui.FeatureEditCtrl.prototype.saveGeometry_ = function(feature) {
         feature.set(os.data.RecordField.LINE_OF_BEARING, undefined, true);
       }
 
+      // set the ring options
+      feature.set(os.data.RecordField.RING_OPTIONS, this['ringOptions']);
+      os.feature.createRings(feature, true);
+
       if (!this.isFeatureDynamic() && (this.showIcon() || this.showCenterIcon()) && this['iconRotation'] != null) {
         feature.set(os.style.StyleField.SHOW_ROTATION, true, true);
         feature.set(os.Fields.BEARING, this['iconRotation'] % 360, true);
@@ -1474,6 +1496,21 @@ os.ui.FeatureEditCtrl.setGeometryRecursive = function(geom, field, value, opt_si
  */
 os.ui.FeatureEditCtrl.prototype.onColumnChange = function(event) {
   event.stopPropagation();
+  this.updatePreview();
+};
+
+
+/**
+ * Handles ring options changes.
+ *
+ * @param {angular.Scope.Event} event
+ * @param {Object<string, *>} options The new ring options.
+ * @protected
+ */
+os.ui.FeatureEditCtrl.prototype.onRingsChange = function(event, options) {
+  event.stopPropagation();
+  this['ringOptions'] = options;
+
   this.updatePreview();
 };
 
@@ -1854,6 +1891,10 @@ os.ui.FeatureEditCtrl.updateFeatureStyle = function(feature) {
           var bearing = /** @type {number} */ (feature.get(os.Fields.BEARING));
           if (!isNaN(bearing)) {
             config['image']['rotation'] = goog.math.toRadians(bearing);
+
+            // when setting the icon rotation, ensure the appropriate rotation columns are set on the feature.
+            feature.set(os.style.StyleField.SHOW_ROTATION, true, true);
+            feature.set(os.style.StyleField.ROTATION_COLUMN, os.Fields.BEARING, true);
           }
         }
       }
