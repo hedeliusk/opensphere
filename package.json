@@ -283,7 +283,7 @@
     "crossfilter2": "^1.4.5",
     "css-element-queries": "^1.2.1",
     "d3": "^3.5.17",
-    "d3-tip": "=0.6.8",
+    "d3-tip": "=0.9.1",
     "file-saver": "^1.3.8",
     "font-awesome": "^4.6.3",
     "google-closure-library": "^20190415.0.0",
