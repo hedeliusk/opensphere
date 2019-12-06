@@ -267,7 +267,7 @@
     "run-script-os": "^1.0.7",
     "sass-lint": "^1.12.1",
     "semantic-release": "^15.13.18",
-    "surge": "^0.20.4",
+    "surge": "^0.21.0",
     "xmllint": "^0.1.1"
   },
   "dependencies": {
