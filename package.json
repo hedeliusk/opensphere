@@ -275,7 +275,7 @@
     "angular-animate": "~1.7.x",
     "angular-route": "~1.7.x",
     "angular-sanitize": "~1.7.x",
-    "blob-polyfill": "^2.0.20171115",
+    "blob-polyfill": "^4.0.0",
     "bootstrap": "4.3.1",
     "bootswatch": "4.3.1",
     "cesium": "1.60",
