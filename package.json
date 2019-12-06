@@ -238,7 +238,7 @@
     "browserify": "^16.5.0",
     "clean-css-cli": "^4.1.11",
     "conventional-changelog-cli": "^1.2.0",
-    "conventional-recommended-bump": "^0.3.0",
+    "conventional-recommended-bump": "^6.0.0",
     "cypress": "=3.5.0",
     "cypress-image-snapshot": "^3.0.1",
     "eslint": "^6.0.0",
