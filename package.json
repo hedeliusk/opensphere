@@ -306,7 +306,7 @@
     "select2": "^3.5.1",
     "suncalc": "^1.8.0",
     "text-encoding": "^0.6.4",
-    "tui-editor": "=1.4.6",
+    "tui-editor": "=1.4.10",
     "xml-lexer": "^0.2.2",
     "zip-js": "^0.0.2"
   },
