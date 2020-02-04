@@ -254,7 +254,7 @@
     "karma-googmodule-preprocessor": "^1.0.1",
     "karma-jasmine": "^0.1.0",
     "karma-junit-reporter": "^1.2.0",
-    "lolex": "=2.3.2",
+    "lolex": "=5.1.2",
     "mkdirp": "^0.5.1",
     "node-sass": "^4.12.0",
     "opensphere-build-closure-helper": "^4.0.0",
