@@ -243,7 +243,7 @@
     "cypress-image-snapshot": "^3.0.1",
     "eslint": "^6.0.0",
     "eslint-config-opensphere": "^3.2.0",
-    "google-closure-compiler": "^20190415.0.0",
+    "google-closure-compiler": "^20200426.0.0",
     "http-server": "^0.11.1",
     "husky": "^3.0.1",
     "json": "^9.0.4",
