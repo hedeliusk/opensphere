@@ -233,7 +233,7 @@
     "@semantic-release/github": "^5.2.10",
     "@semantic-release/npm": "^5.1.4",
     "@semantic-release/release-notes-generator": "^7.1.4",
-    "angular-mocks": "~1.7.x",
+    "angular-mocks": "~1.8.0",
     "autoprefixer": "^8.4.1",
     "browserify": "^16.5.0",
     "clean-css-cli": "^4.1.11",
