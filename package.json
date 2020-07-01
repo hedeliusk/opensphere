@@ -273,7 +273,7 @@
   "dependencies": {
     "angular": "~1.7.x",
     "angular-animate": "~1.7.x",
-    "angular-route": "~1.7.x",
+    "angular-route": "~1.8.0",
     "angular-sanitize": "~1.7.x",
     "blob-polyfill": "^2.0.20171115",
     "bootstrap": "4.3.1",
